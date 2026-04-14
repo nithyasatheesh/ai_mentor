@@ -3,7 +3,7 @@ from openai import OpenAI
 from gtts import gTTS
 import tempfile
 
-client = OpenAI(api_key="Ysk-proj-O-OVpFY3FuZGeiED58StKsL6840u8BNo1G4YehmHSF9fbbHDq09syT2lrUQawaWUZKD8ZJK5GHT3BlbkFJBaNHozFdjm_gVMn3azTt3GbD7vsbrqUHoCXISQ-kj5IUFnY8cc3sSfy3pnW-K-jedNk7V-u90A")
+client = OpenAI(api_key="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")
 
 st.title("💻 AI Coding Mentor (Online 🚀)")
 
