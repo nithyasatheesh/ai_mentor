@@ -5,7 +5,7 @@ from gtts import gTTS
 import tempfile
 
 # Use secret key
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("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"))
 
 st.title("💻 AI Coding Mentor (Online 🚀)")
 
