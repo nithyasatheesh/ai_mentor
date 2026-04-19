@@ -1,53 +1,74 @@
 import streamlit as st
-import os
 from openai import OpenAI
 from gtts import gTTS
 import tempfile
+import os
 
-# ✅ Correct way to read API key from Streamlit Secrets
+# 🔐 Secure API key (from Streamlit secrets)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-st.set_page_config(page_title="AI Coding Mentor", layout="centered")
+st.set_page_config(page_title="AI Coding Mentor", page_icon="💻")
 
-st.title("💻 AI Coding Mentor (Online 🚀)")
+st.title("💻 AI Coding Mentor 🚀")
+st.write("Ask coding questions (Python, Java, React, .NET, PySpark)")
 
-# 🔊 Generate audio
+# Function to generate audio
 def generate_audio(text):
     tts = gTTS(text)
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     tts.save(temp_file.name)
     return temp_file.name
 
-# 💬 User input
+# Input
 user_input = st.text_input("Ask your coding mentor:")
 
-if user_input:
-    with st.spinner("Thinking... 🤖"):
-        try:
+# Button
+if st.button("Get Answer"):
+    if user_input.strip() == "":
+        st.warning("Please enter a question.")
+    else:
+        with st.spinner("Thinking... 🤖"):
+
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a helpful coding mentor. Explain clearly with examples."
+                        "content": """
+You are an expert AI coding mentor.
+
+- Answer only coding-related questions
+- Support Python, Java, React, .NET, PySpark
+- Explain clearly with examples
+- If not coding question, say:
+'I can only help with coding-related questions.'
+"""
                     },
-                    {
-                        "role": "user",
-                        "content": user_input
-                    }
-                ]
+                    {"role": "user", "content": user_input}
+                ],
+                max_tokens=500
             )
 
             answer = response.choices[0].message.content
 
-            # Show answer
-            st.success("Answer:")
-            st.write(answer)
+        # Show answer
+        st.subheader("📘 Answer:")
+        st.write(answer)
 
-            # 🔊 Play audio
-            audio_file = generate_audio(answer)
-            st.audio(audio_file, format="audio/mp3")
+        # Show code format (if any)
+        st.code(answer)
 
-        except Exception as e:
-            st.error("❌ Error occurred. Check API key or logs.")
-            st.write(e)
+        # Generate audio
+        audio_file = generate_audio(answer)
+
+        st.subheader("🔊 Audio Explanation:")
+        st.audio(audio_file)
+
+        # Download button
+        with open(audio_file, "rb") as f:
+            st.download_button(
+                label="⬇️ Download Audio",
+                data=f,
+                file_name="answer.mp3",
+                mime="audio/mpeg"
+            )
