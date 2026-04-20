@@ -2,73 +2,65 @@ import streamlit as st
 from openai import OpenAI
 from gtts import gTTS
 import tempfile
-import os
 
-# 🔐 Secure API key (from Streamlit secrets)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# 🔐 Use Streamlit secrets (DO NOT hardcode key)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.set_page_config(page_title="AI Coding Mentor", page_icon="💻")
+st.title("💻 AI Coding Mentor (Smart + Concept Ready) 🚀")
 
-st.title("💻 AI Coding Mentor 🚀")
-st.write("Ask coding questions (Python, Java, React, .NET, PySpark)")
-
-# Function to generate audio
+# 🎙️ Generate audio
 def generate_audio(text):
-    tts = gTTS(text)
+    clean_text = (
+        text.replace("`", "")
+        .replace("*", "")
+        .replace("#", "")
+    )
+
+    tts = gTTS(clean_text)
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     tts.save(temp_file.name)
     return temp_file.name
 
-# Input
-user_input = st.text_input("Ask your coding mentor:")
 
-# Button
-if st.button("Get Answer"):
-    if user_input.strip() == "":
-        st.warning("Please enter a question.")
-    else:
-        with st.spinner("Thinking... 🤖"):
+# 🧠 Mentor prompt (UPDATED)
+SYSTEM_PROMPT = """
+You are an AI coding mentor.
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": """
-You are an expert AI coding mentor.
+You can answer:
+- Programming questions
+- Conceptual questions
+- Theoretical explanations
+- Real-world scenarios
+- Debugging problems
 
-- Answer only coding-related questions
-- Support Python, Java, React, .NET, PySpark
-- Explain clearly with examples
-- If not coding question, say:
-'I can only help with coding-related questions.'
+Guidelines:
+- Explain in simple English
+- Be clear and structured
+- If coding question → give code + explanation
+- If concept question → explain with examples
+- Avoid complex jargon
+- Keep it beginner friendly
 """
-                    },
-                    {"role": "user", "content": user_input}
-                ],
-                max_tokens=500
-            )
 
-            answer = response.choices[0].message.content
+# 💬 User input
+user_input = st.text_input("Ask your question (coding or concept):")
 
-        # Show answer
-        st.subheader("📘 Answer:")
-        st.write(answer)
+if user_input:
 
-        # Show code format (if any)
-        st.code(answer)
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_input}
+        ]
+    )
 
-        # Generate audio
-        audio_file = generate_audio(answer)
+    answer = response.choices[0].message.content
 
-        st.subheader("🔊 Audio Explanation:")
-        st.audio(audio_file)
+    # 📘 Show text
+    st.subheader("📘 Explanation")
+    st.write(answer)
 
-        # Download button
-        with open(audio_file, "rb") as f:
-            st.download_button(
-                label="⬇️ Download Audio",
-                data=f,
-                file_name="answer.mp3",
-                mime="audio/mpeg"
-            )
+    # 🎙️ Play audio
+    audio_file = generate_audio(answer)
+    st.audio(audio_file)
