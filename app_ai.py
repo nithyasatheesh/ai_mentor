@@ -6,9 +6,14 @@ import tempfile
 # 🔐 Use Streamlit secrets (DO NOT hardcode key)
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.title("💻 AI Coding Mentor (Smart + Concept Ready) 🚀")
+st.set_page_config(page_title="AI Coding Mentor", layout="centered")
 
-# 🎙️ Generate audio
+st.title("💻 AI Coding Mentor 🚀")
+st.write("Ask coding or concept questions and get explanation + audio")
+
+# ---------------------------
+# 🎙️ Audio function
+# ---------------------------
 def generate_audio(text):
     clean_text = (
         text.replace("`", "")
@@ -22,45 +27,60 @@ def generate_audio(text):
     return temp_file.name
 
 
-# 🧠 Mentor prompt (UPDATED)
+# ---------------------------
+# 🧠 System Prompt
+# ---------------------------
 SYSTEM_PROMPT = """
 You are an AI coding mentor.
 
 You can answer:
 - Programming questions
 - Conceptual questions
-- Theoretical explanations
 - Real-world scenarios
 - Debugging problems
 
 Guidelines:
-- Explain in simple English
+- Use simple English
 - Be clear and structured
-- If coding question → give code + explanation
-- If concept question → explain with examples
-- Avoid complex jargon
+- If coding → give code + explanation
+- If concept → explain with examples
 - Keep it beginner friendly
 """
 
-# 💬 User input
-user_input = st.text_input("Ask your question (coding or concept):")
 
-if user_input:
+# ---------------------------
+# 💬 Input
+# ---------------------------
+user_input = st.text_input("Ask your question:")
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_input}
-        ]
-    )
+# ---------------------------
+# 🚀 Button Trigger (FIXED)
+# ---------------------------
+if st.button("Generate Answer"):
 
-    answer = response.choices[0].message.content
+    if user_input.strip() == "":
+        st.warning("Please enter a question")
+    else:
+        with st.spinner("Thinking... 🤖"):
 
-    # 📘 Show text
-    st.subheader("📘 Explanation")
-    st.write(answer)
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": user_input}
+                    ]
+                )
 
-    # 🎙️ Play audio
-    audio_file = generate_audio(answer)
-    st.audio(audio_file)
+                answer = response.choices[0].message.content
+
+                # 📘 Output section (ALWAYS visible now)
+                st.subheader("📘 Explanation")
+                st.write(answer)
+
+                # 🎙️ Audio
+                audio_file = generate_audio(answer)
+                st.audio(audio_file)
+
+            except Exception as e:
+                st.error(f"Error: {e}")
