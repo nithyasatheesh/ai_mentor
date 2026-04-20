@@ -3,13 +3,13 @@ from openai import OpenAI
 from gtts import gTTS
 import tempfile
 
-# 🔐 Use Streamlit secrets (DO NOT hardcode key)
+# 🔐 Use Streamlit secrets
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 st.set_page_config(page_title="AI Coding Mentor", layout="centered")
 
 st.title("💻 AI Coding Mentor 🚀")
-st.write("Ask coding or concept questions and get explanation + audio")
+st.write("Ask coding, concept, or debugging questions (Java, React, Python, etc.)")
 
 # ---------------------------
 # 🎙️ Audio function
@@ -34,27 +34,39 @@ SYSTEM_PROMPT = """
 You are an AI coding mentor.
 
 You can answer:
-- Programming questions
+- Programming questions (Java, React, Python, etc.)
 - Conceptual questions
-- Real-world scenarios
 - Debugging problems
+- Real-world scenarios
 
 Guidelines:
 - Use simple English
 - Be clear and structured
 - If coding → give code + explanation
 - If concept → explain with examples
+- If debugging → explain error + fix
 - Keep it beginner friendly
 """
 
+# ---------------------------
+# 💬 MULTI-LINE INPUT (FIXED)
+# ---------------------------
+user_input = st.text_area(
+    "Ask your question:",
+    height=180,
+    placeholder="""Example:
+
+Explain why this React code is not updating:
+
+const [count, setCount] = useState(0);
+
+setCount(count + 1);
+setCount(count + 1);
+"""
+)
 
 # ---------------------------
-# 💬 Input
-# ---------------------------
-user_input = st.text_input("Ask your question:")
-
-# ---------------------------
-# 🚀 Button Trigger (FIXED)
+# 🚀 Generate Answer
 # ---------------------------
 if st.button("Generate Answer"):
 
@@ -74,7 +86,7 @@ if st.button("Generate Answer"):
 
                 answer = response.choices[0].message.content
 
-                # 📘 Output section (ALWAYS visible now)
+                # 📘 Output
                 st.subheader("📘 Explanation")
                 st.write(answer)
 
