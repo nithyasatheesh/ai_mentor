@@ -1,4 +1,5 @@
 import tempfile
+import re
 
 import streamlit as st
 from gtts import gTTS
@@ -28,9 +29,11 @@ You can answer:
 Guidelines:
 - Use simple English
 - Be clear and structured
-- If coding → give code + explanation
+- If coding → give code + explanation + expected output
 - If concept → explain with examples
-- If debugging → explain error + fix
+- If debugging → explain error + root cause + fix + corrected code
+- Always format code with fenced code blocks and include language tags
+- Format outputs/errors/debug snippets in fenced code blocks
 - Keep it beginner friendly
 """
 
@@ -44,6 +47,32 @@ def generate_audio(text: str) -> str:
     temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     tts.save(temp_file.name)
     return temp_file.name
+
+
+def render_message_content(content: str) -> None:
+    """
+    Render assistant content while keeping code/output/debug snippets very clear.
+    """
+    block_pattern = re.compile(r"```(\w+)?\n(.*?)```", re.DOTALL)
+    last_end = 0
+
+    for match in block_pattern.finditer(content):
+        # Render any plain markdown before the code block
+        if match.start() > last_end:
+            plain_text = content[last_end:match.start()].strip()
+            if plain_text:
+                st.markdown(plain_text)
+
+        language = (match.group(1) or "").strip()
+        code_text = match.group(2).rstrip()
+        st.code(code_text, language=language if language else None)
+        last_end = match.end()
+
+    # Render any remaining text after the final code block
+    if last_end < len(content):
+        tail_text = content[last_end:].strip()
+        if tail_text:
+            st.markdown(tail_text)
 
 
 # ---------------------------
@@ -105,7 +134,9 @@ with st.sidebar:
 # ---------------------------
 for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        render_message_content(msg["content"])
+        if msg["role"] == "assistant" and msg.get("audio_file"):
+            st.audio(msg["audio_file"], format="audio/mp3")
 
 
 # ---------------------------
@@ -134,18 +165,24 @@ if prompt:
                     messages=api_messages,
                 )
                 answer = response.choices[0].message.content
-                st.markdown(answer)
+                render_message_content(answer)
 
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": answer}
-                )
-
+                audio_file = None
                 if enable_audio:
                     audio_file = generate_audio(answer)
-                    st.audio(audio_file)
+                    st.audio(audio_file, format="audio/mp3")
+
+                st.session_state.chat_history.append(
+                    {
+                        "role": "assistant",
+                        "content": answer,
+                        "audio_file": audio_file,
+                    }
+                )
             except Exception as e:
                 error_message = f"Error: {e}"
-                st.error(error_message)
+                st.markdown("### ❌ Error")
+                st.code(error_message)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": error_message}
                 )
