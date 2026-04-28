@@ -46,11 +46,20 @@ def generate_audio(text: str) -> str:
     return temp_file.name
 
 
+def get_audio_for_message(message_id: str, text: str) -> str:
+    if message_id not in st.session_state.audio_cache:
+        st.session_state.audio_cache[message_id] = generate_audio(text)
+    return st.session_state.audio_cache[message_id]
+
+
 # ---------------------------
 # 🧠 Session state
 # ---------------------------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+if "audio_cache" not in st.session_state:
+    st.session_state.audio_cache = {}
 
 
 # ---------------------------
@@ -93,19 +102,26 @@ with st.sidebar:
         ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1"],
         index=0,
     )
-    enable_audio = st.toggle("Read assistant responses aloud", value=False)
+    enable_audio = st.toggle("🔊 Enable text-to-speech", value=False)
 
     if st.button("🧹 Clear chat history", use_container_width=True):
         st.session_state.chat_history = []
+        st.session_state.audio_cache = {}
         st.rerun()
 
 
 # ---------------------------
 # 🗂️ Chat history renderer
 # ---------------------------
-for msg in st.session_state.chat_history:
+for idx, msg in enumerate(st.session_state.chat_history):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
+        if enable_audio and msg["role"] == "assistant":
+            audio_file = get_audio_for_message(
+                message_id=f"history_{idx}",
+                text=msg["content"],
+            )
+            st.audio(audio_file)
 
 
 # ---------------------------
@@ -141,7 +157,13 @@ if prompt:
                 )
 
                 if enable_audio:
-                    audio_file = generate_audio(answer)
+                    current_message_id = (
+                        f"history_{len(st.session_state.chat_history) - 1}"
+                    )
+                    audio_file = get_audio_for_message(
+                        message_id=current_message_id,
+                        text=answer,
+                    )
                     st.audio(audio_file)
             except Exception as e:
                 error_message = f"Error: {e}"
