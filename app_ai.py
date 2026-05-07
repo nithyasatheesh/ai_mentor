@@ -6,7 +6,7 @@ import tempfile
 # 🔐 Use Streamlit secrets
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.set_page_config(page_title="AI Coding Mentor", layout="centered")
+st.set_page_config(page_title="AI Coding Tutor", layout="centered")
 
 st.title("💻 AI Coding Mentor 🚀")
 st.write("Ask coding, concept, or debugging questions (Java, React, Python, etc.)")
